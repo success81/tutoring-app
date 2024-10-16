@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michelle's AI Tutor</title>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background-image: url('/static/background.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            color: white;
+            width: 300px;
+        }
+        h1 {
+            color: #f0f0f0;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+            margin-bottom: 1.5rem;
+        }
+        select, input, button {
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            font-size: 1rem;
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(1.0);
+        }
+        select, input {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        .error {
+            color: #ff4d4d;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Michelle's AI Tutor</h1>
+        <form action="/" method="post">
+            <select name="topic" id="topicSelect" required onchange="toggleQuestionNumber()">
+                <option value="" disabled selected>Select a topic</option>
+                <option value="math">Math</option>
+                <option value="english">English</option>
+                <option value="reading">Reading</option>
+                <option value="social">Social Skills</option>
+                <option value="free">Free Questions</option>
+            </select>
+            <input type="number" name="question_number" id="questionNumber" placeholder="Enter question number" min="1">
+            <button type="submit">Start Tutoring</button>
+        </form>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleQuestionNumber() {
+            var topic = document.getElementById('topicSelect').value;
+            var questionNumber = document.getElementById('questionNumber');
+            if (topic === 'free') {
+                questionNumber.style.display = 'none';
+                questionNumber.required = false;
+            } else {
+                questionNumber.style.display = 'block';
+                questionNumber.required = true;
+            }
+        }
+    </script>
+</body>
+</html>

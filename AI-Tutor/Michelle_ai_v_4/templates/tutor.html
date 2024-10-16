@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michelle's AI Tutor - Tutoring Session</title>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background-image: url('/static/background.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 100%;
+            color: white;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+        }
+        h1, h2 {
+            color: #f0f0f0;
+            text-align: center;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+            margin-bottom: 1.5rem;
+        }
+        input, button, textarea {
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(1.0);
+        }
+        textarea {
+            background-color: rgba(255, 255, 255, 0.9);
+            resize: none;
+        }
+        #conversation {
+            margin-top: 1rem;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            height: 300px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            font-size: 1rem;
+            color: #000;
+            font-weight: 500;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .tutor-message {
+            background-color: rgba(240, 240, 240, 0.95);
+        }
+        .user-message {
+            background-color: rgba(230, 242, 255, 0.95);
+            margin-left: 20%;
+        }
+        .sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        #evaluationMessage {
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Michelle's AI Tutor - {{ topic.capitalize() }}</h1>
+        <h2>{{ question }}</h2>
+        <div id="conversation"></div>
+        <div class="loader" id="loader"></div>
+        <textarea id="userInput" rows="4" placeholder="Type your message here"></textarea>
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="resetConversation()">Reset</button>
+        <button onclick="submitForEvaluation()">Submit for Evaluation</button>
+        <div id="evaluationMessage"></div>
+        <a href="/"><button>Back to Home</button></a>
+    </div>
+
+    <script>
+        let context = `{{ context|safe }}`;
+        let greeting = "{{ greeting }}";
+        let question = "{{ question }}";
+        let topic = "{{ topic }}";
+        let conversationHistory = [];
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput').value;
+            addToConversation(userInput, 'user');
+            showLoader();
+            
+            fetch('/get_ai_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_input: userInput,
+                    context: context,
+                    topic: topic
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoader();
+                addToConversation(data.response, 'tutor');
+                context += "Human: " + userInput + "\nAI: " + data.response + "\n";
+            })
+            .catch(error => {
+                hideLoader();
+                console.error('Error:', error);
+            });
+
+            document.getElementById('userInput').value = '';
+        }
+
+        function addToConversation(message, sender) {
+            const conversation = document.getElementById('conversation');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const senderSpan = document.createElement('div');
+            senderSpan.className = 'sender';
+            senderSpan.textContent = sender === 'user' ? 'You' : 'Tutor';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.innerHTML = message;
+            
+            messageDiv.appendChild(senderSpan);
+            messageDiv.appendChild(contentDiv);
+            
+            conversation.appendChild(messageDiv);
+            conversation.scrollTop = conversation.scrollHeight;
+
+            // Add to conversation history
+            conversationHistory.push({sender: sender, message: message});
+        }
+
+        function resetConversation() {
+            document.getElementById('conversation').innerHTML = '';
+            context = `{{ context|safe }}`;
+            conversationHistory = [];
+            addToConversation(greeting, 'tutor');
+            if (topic !== 'free') {
+                addToConversation(`Let's discuss the ${question}.`, 'tutor');
+            }
+        }
+
+        function submitForEvaluation() {
+            showLoader();
+            fetch('/submit_for_evaluation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    conversation: conversationHistory.map(item => `${item.sender}: ${item.message}`).join('\n\n'),
+                    topic: topic,
+                    question_number: question.split('.')[0]
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoader();
+                document.getElementById('evaluationMessage').textContent = `Evaluation submitted successfully. File: ${data.filename}`;
+            })
+            .catch(error => {
+                hideLoader();
+                console.error('Error:', error);
+            });
+        }
+
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // Initialize conversation with greeting and topic
+        window.onload = function() {
+            addToConversation(greeting, 'tutor');
+            if (topic !== 'free') {
+                addToConversation(`Let's discuss the ${question}.`, 'tutor');
+            }
+        }
+    </script>
+</body>
+</html>
